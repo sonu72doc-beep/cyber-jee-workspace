@@ -39,6 +39,7 @@ public class MainActivity extends Activity {
     private TextView profileStatus;
     private TextView deviceStatus;
     private LinearLayout devicesCard;
+    private LinearLayout deviceRows;
     private ImageView qrImage;
     private TextView inviteStatus;
 
@@ -137,6 +138,9 @@ public class MainActivity extends Activity {
         devicesCard.addView(text("Family devices", 18, true));
         deviceStatus = text("", 14, false);
         devicesCard.addView(deviceStatus);
+        deviceRows = new LinearLayout(this);
+        deviceRows.setOrientation(LinearLayout.VERTICAL);
+        devicesCard.addView(deviceRows);
         button("Scan a family QR", devicesCard).setOnClickListener(v -> startQrScan());
         button("Refresh device list", devicesCard).setOnClickListener(v -> updateDeviceStatus());
         button("Clear local device list", devicesCard).setOnClickListener(v ->
@@ -171,7 +175,7 @@ public class MainActivity extends Activity {
         privacy.addView(text("Privacy & permissions", 18, true));
         privacy.addView(text("Camera permission is used only when you choose to scan a QR. This build does not access payment apps, SMS, call history, or location. QR pairing is a demo and is not a security boundary.", 14, false));
 
-        TextView footer = text("FamGuard · Version 0.3.0 · Local prototype", 12, false);
+        TextView footer = text("FamGuard · Version 0.4.0 · Local prototype", 12, false);
         footer.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -269,21 +273,56 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void removeDevice(String token) {
+        try {
+            JSONArray devices = new JSONArray(prefs.getString("family_devices", "[]"));
+            JSONArray remaining = new JSONArray();
+            for (int i = 0; i < devices.length(); i++) {
+                JSONObject item = devices.getJSONObject(i);
+                if (!token.equals(item.optString("token"))) remaining.put(item);
+            }
+            prefs.edit().putString("family_devices", remaining.toString()).apply();
+            updateDeviceStatus();
+            Toast.makeText(this, "Demo device removed from this phone", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not update the local device list", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void updateDeviceStatus() {
         if (deviceStatus == null) return;
+        deviceRows.removeAllViews();
         try {
             JSONArray devices = new JSONArray(prefs.getString("family_devices", "[]"));
             if (devices.length() == 0) {
                 deviceStatus.setText("No demo devices saved yet. Generate an invite on one phone and scan it from another.");
                 return;
             }
-            StringBuilder list = new StringBuilder("Saved on this phone only:\n");
+            deviceStatus.setText("Saved on this phone only · " + devices.length() + "/10 demo devices");
             for (int i = 0; i < devices.length(); i++) {
                 JSONObject device = devices.getJSONObject(i);
-                list.append("• ").append(device.optString("name", "Family device"))
-                    .append(" — ").append(device.optString("status", "Local demo")).append("\n");
+                String name = device.optString("name", "Family device");
+                String token = device.optString("token", "");
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.VERTICAL);
+                row.setPadding(dp(10), dp(8), dp(10), dp(8));
+                row.setBackgroundColor(0xFFF0F4FA);
+                TextView details = text(name + "\n" + device.optString("status", "Local demo"), 14, true);
+                row.addView(details);
+                Button remove = new Button(this);
+                remove.setText("Remove " + name);
+                remove.setOnClickListener(v -> new AlertDialog.Builder(this)
+                    .setTitle("Remove demo device?")
+                    .setMessage("This only removes the saved record from this phone.")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Remove", (dialog, which) -> removeDevice(token))
+                    .show());
+                row.addView(remove);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.topMargin = dp(8);
+                deviceRows.addView(row, params);
             }
-            deviceStatus.setText(list.toString());
         } catch (Exception e) {
             deviceStatus.setText("Device list could not be read. You can try scanning again.");
         }
