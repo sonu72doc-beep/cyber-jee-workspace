@@ -49,10 +49,10 @@ public class MainActivity extends Activity {
         page.setBackgroundColor(0xFFF5F7FB);
         scroll.addView(page);
 
-        TextView title = text("Cyber Jee", 30, true);
+        TextView title = text("FamGuard", 30, true);
         title.setTextColor(0xFF1646A0);
         page.addView(title);
-        page.addView(text("Family Control", 21, true));
+        page.addView(text("Family spending & family safety", 21, true));
         page.addView(text("Your family settings stay on this phone until secure pairing is added.", 14, false));
 
         LinearLayout card = new LinearLayout(this);
@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
         info.addView(text("Privacy", 18, true));
         info.addView(text("This initial build does not access camera, gallery, location, SMS, call history, or payment apps.", 14, false));
 
-        TextView footer = text("Version 0.1.0 · Local settings only", 12, false);
+        TextView footer = text("FamGuard · Version 0.1.1 · Local settings only", 12, false);
         footer.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
