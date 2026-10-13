@@ -10,16 +10,17 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.text.NumberFormat;
-import java.util.Locale;
-
 public class MainActivity extends Activity {
     private SharedPreferences prefs;
-    private TextView budgetSummary;
-    private NumberFormat numberFormat;
+    private EditText nameInput;
+    private Spinner roleSpinner;
+    private TextView profileStatus;
+    private TextView deviceStatus;
 
     @Override
     public void onCreate(Bundle state) {
@@ -27,7 +28,6 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(0xFFF5F7FB);
         getWindow().setNavigationBarColor(0xFFF5F7FB);
         prefs = getSharedPreferences("family_control_settings", MODE_PRIVATE);
-        numberFormat = NumberFormat.getIntegerInstance(Locale.getDefault());
         render();
     }
 
@@ -45,6 +45,18 @@ public class MainActivity extends Activity {
         return v;
     }
 
+    private LinearLayout card(LinearLayout page) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(14), dp(16), dp(14));
+        box.setBackgroundColor(0xFFFFFFFF);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.topMargin = dp(14);
+        page.addView(box, params);
+        return box;
+    }
+
     private void render() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -57,59 +69,57 @@ public class MainActivity extends Activity {
         TextView title = text("FamGuard", 30, true);
         title.setTextColor(0xFF1646A0);
         page.addView(title);
-        page.addView(text("Family spending & family safety", 21, true));
-        page.addView(text("Your family settings stay on this phone until secure pairing is added.", 14, false));
+        page.addView(text("Family device safety", 21, true));
+        page.addView(text("Set up this phone first. Secure pairing will let family members connect their devices.", 14, false));
 
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(16), dp(14), dp(16), dp(14));
-        card.setBackgroundColor(0xFFFFFFFF);
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardParams.topMargin = dp(18);
-        page.addView(card, cardParams);
+        LinearLayout setup = card(page);
+        setup.addView(text("Set up your profile", 18, true));
+        setup.addView(text("Profile details are saved only on this phone for now.", 14, false));
 
-        card.addView(text("Monthly spending limit", 18, true));
-        budgetSummary = text("", 16, false);
-        card.addView(budgetSummary);
-        EditText amount = new EditText(this);
-        amount.setSingleLine(true);
-        amount.setInputType(2);
-        amount.setHint("Enter limit in rupees (e.g. 3000)");
-        amount.setText(String.valueOf(prefs.getInt("monthly_limit", 3000)));
-        card.addView(amount);
+        nameInput = new EditText(this);
+        nameInput.setSingleLine(true);
+        nameInput.setHint("Your name");
+        nameInput.setText(prefs.getString("profile_name", ""));
+        setup.addView(nameInput);
 
-        Button save = new Button(this);
-        save.setText("Save spending limit");
-        card.addView(save);
-        save.setOnClickListener(v -> {
-            String raw = amount.getText().toString().trim();
-            try {
-                int value = Integer.parseInt(raw);
-                if (value < 0 || value > 10000000) throw new NumberFormatException();
-                prefs.edit().putInt("monthly_limit", value).apply();
-                updateSummary();
-                Toast.makeText(this, "Limit saved on this phone", Toast.LENGTH_SHORT).show();
-            } catch (NumberFormatException ex) {
-                amount.setError("Enter a valid amount");
+        roleSpinner = new Spinner(this);
+        String[] roles = {"Family admin", "Family member"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roles);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        roleSpinner.setAdapter(adapter);
+        String savedRole = prefs.getString("profile_role", "Family admin");
+        roleSpinner.setSelection("Family member".equals(savedRole) ? 1 : 0);
+        setup.addView(roleSpinner);
+
+        Button saveProfile = new Button(this);
+        saveProfile.setText("Save profile");
+        setup.addView(saveProfile);
+        saveProfile.setOnClickListener(v -> {
+            String name = nameInput.getText().toString().trim();
+            if (name.isEmpty()) {
+                nameInput.setError("Enter your name");
+                return;
             }
+            String role = roleSpinner.getSelectedItem().toString();
+            prefs.edit().putString("profile_name", name).putString("profile_role", role).apply();
+            updateProfileStatus();
+            Toast.makeText(this, "Profile saved on this phone", Toast.LENGTH_SHORT).show();
         });
-        updateSummary();
+        profileStatus = text("", 14, false);
+        setup.addView(profileStatus);
+        updateProfileStatus();
 
-        LinearLayout info = new LinearLayout(this);
-        info.setOrientation(LinearLayout.VERTICAL);
-        info.setPadding(dp(16), dp(14), dp(16), dp(14));
-        info.setBackgroundColor(0xFFFFFFFF);
-        LinearLayout.LayoutParams infoParams = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        infoParams.topMargin = dp(14);
-        page.addView(info, infoParams);
-        info.addView(text("Device pairing", 18, true));
-        info.addView(text("Not connected yet. QR pairing and secure cloud sync must be implemented before other phones can be managed.", 14, false));
-        info.addView(text("Privacy", 18, true));
-        info.addView(text("This initial build does not access camera, gallery, location, SMS, call history, or payment apps.", 14, false));
+        LinearLayout devices = card(page);
+        devices.addView(text("Family devices", 18, true));
+        deviceStatus = text("No devices connected yet.", 15, false);
+        devices.addView(deviceStatus);
+        devices.addView(text("Next step: secure QR / invite-link pairing and shared family data. Pairing is not active in this build.", 14, false));
 
-        TextView footer = text("FamGuard · Version 0.1.2 · Local settings only", 12, false);
+        LinearLayout privacy = card(page);
+        privacy.addView(text("Privacy & permissions", 18, true));
+        privacy.addView(text("FamGuard does not access payment apps, SMS, call history, camera, or location in this build. Sensitive features must request permission before use.", 14, false));
+
+        TextView footer = text("FamGuard · Version 0.2.0 · Profile stored locally", 12, false);
         footer.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -119,8 +129,13 @@ public class MainActivity extends Activity {
         setContentView(scroll);
     }
 
-    private void updateSummary() {
-        int limit = prefs.getInt("monthly_limit", 3000);
-        budgetSummary.setText("Saved limit: ₹" + numberFormat.format(limit) + " / month");
+    private void updateProfileStatus() {
+        String name = prefs.getString("profile_name", "");
+        String role = prefs.getString("profile_role", "Family admin");
+        if (name.isEmpty()) {
+            profileStatus.setText("Profile not saved yet.");
+        } else {
+            profileStatus.setText("Saved profile: " + name + " · " + role);
+        }
     }
 }
