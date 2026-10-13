@@ -33,3 +33,20 @@ List Python packages in `requirements.txt`. Prefer reviewed, maintained packages
 ## Deployment status
 
 Continuous integration is configured as a starter. Production deployment is **not configured yet** because the application framework and hosting target have not been selected. Once the app and target (for example, GitHub Pages for a static site or a chosen app host) are known, add a deployment workflow with narrowly scoped credentials if needed.
+
+
+## FamGuard cloud pairing (free-tier setup)
+
+The Android app now includes Firebase Authentication, Cloud Firestore, and ZXing QR libraries as the foundation for secure family-device pairing. These libraries are dependencies only; cloud sign-in, database rules, QR scanning, and device linking are not active until the Firebase project is configured and the app code is completed.
+
+### Required one-time account setup
+
+1. Open the [Firebase Console](https://console.firebase.google.com/) and create a project on the no-cost Spark plan.
+2. Add an Android app with package name `com.cyberjee.familycontrol`.
+3. Download `google-services.json` and place it in `app/google-services.json` locally. Do not commit credentials or private keys.
+4. Enable an authentication method and configure restrictive Firestore security rules before storing any family data.
+5. Keep the project on Spark if you want to avoid linking a billing account. Free quotas apply; when a quota is exceeded, some services can stop until the quota resets.
+
+Official plan details: https://firebase.google.com/docs/projects/billing/firebase-pricing-plans
+
+Do not store payment credentials or UPI PINs in FamGuard. Spending-limit features remain postponed until the final phase.
