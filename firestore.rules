@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isMember(familyId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+    }
+    function isAdmin(familyId) {
+      return isMember(familyId)
+        && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /families/{familyId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+      allow get, list: if isMember(familyId);
+      allow update: if isAdmin(familyId)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']);
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow get, list: if isMember(familyId);
+        allow create: if signedIn() && uid == request.auth.uid
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && (
+            (request.resource.data.role == 'admin'
+              && get(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid)
+            ||
+            (request.resource.data.role == 'member'
+              && request.resource.data.inviteId is string
+              && exists(/databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId))
+              && get(/databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)).data.familyId == familyId
+              && get(/databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)).data.expiresAt > request.time
+              && get(/databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)).data.used == false)
+          );
+        allow update: if isAdmin(familyId) && uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']);
+        allow delete: if isAdmin(familyId) && uid != request.auth.uid;
+      }
+
+      match /invites/{inviteId} {
+        allow get: if signedIn();
+        allow list: if isAdmin(familyId);
+        allow create: if isAdmin(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.used == false;
+        allow update: if signedIn()
+          && resource.data.familyId == familyId
+          && resource.data.used == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used'])
+          && request.resource.data.used == true
+          && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+        allow delete: if isAdmin(familyId);
+      }
+    }
+  }
+}
