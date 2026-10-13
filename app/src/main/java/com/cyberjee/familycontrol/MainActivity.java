@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
     private LinearLayout deviceRows;
     private ImageView qrImage;
     private TextView inviteStatus;
+    private String currentInvitePayload = "";
 
     @Override
     public void onCreate(Bundle state) {
@@ -142,6 +143,7 @@ public class MainActivity extends Activity {
         deviceRows.setOrientation(LinearLayout.VERTICAL);
         devicesCard.addView(deviceRows);
         button("Scan a family QR", devicesCard).setOnClickListener(v -> startQrScan());
+        button("Enter invite code manually", devicesCard).setOnClickListener(v -> showManualInviteEntry());
         button("Refresh device list", devicesCard).setOnClickListener(v -> updateDeviceStatus());
         button("Clear local device list", devicesCard).setOnClickListener(v ->
             new AlertDialog.Builder(this)
@@ -170,6 +172,15 @@ public class MainActivity extends Activity {
         invite.addView(qrImage, qrParams);
         inviteStatus = text("No invitation generated yet.", 13, false);
         invite.addView(inviteStatus);
+        button("Copy invite code", invite).setOnClickListener(v -> {
+            if (currentInvitePayload.isEmpty()) {
+                Toast.makeText(this, "Generate an invite QR first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("FamGuard invite", currentInvitePayload));
+            Toast.makeText(this, "Invite code copied. Send it only to your family member.", Toast.LENGTH_LONG).show();
+        });
 
         LinearLayout privacy = card(page);
         privacy.addView(text("Privacy & permissions", 18, true));
@@ -199,6 +210,7 @@ public class MainActivity extends Activity {
         String token = UUID.randomUUID().toString();
         String encodedName = Base64.encodeToString(name.getBytes(StandardCharsets.UTF_8), Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
         String payload = "FAMGUARD|1|" + token + "|" + encodedName;
+        currentInvitePayload = payload;
         try {
             BitMatrix matrix = new MultiFormatWriter().encode(payload, BarcodeFormat.QR_CODE, 640, 640);
             Bitmap bitmap = new BarcodeEncoder().createBitmap(matrix);
@@ -232,6 +244,28 @@ public class MainActivity extends Activity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+
+    private void showManualInviteEntry() {
+        EditText input = new EditText(this);
+        input.setHint("Paste the complete FamGuard invite code");
+        input.setMinLines(2);
+        input.setGravity(Gravity.TOP | Gravity.START);
+        new AlertDialog.Builder(this)
+            .setTitle("Enter invite code")
+            .setMessage("Use this if the camera scanner is unavailable. On the other phone, generate an invite and tap Copy invite code. This still saves a local demo record only.")
+            .setView(input)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Add invite", (dialog, which) -> {
+                String code = input.getText().toString().trim();
+                if (code.isEmpty()) {
+                    Toast.makeText(this, "Paste an invite code first", Toast.LENGTH_SHORT).show();
+                } else {
+                    saveScannedInvite(code);
+                }
+            })
+            .show();
     }
 
     private void saveScannedInvite(String contents) {
