@@ -19,11 +19,15 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private TextView budgetSummary;
+    private NumberFormat numberFormat;
 
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        getWindow().setStatusBarColor(0xFFF5F7FB);
+        getWindow().setNavigationBarColor(0xFFF5F7FB);
         prefs = getSharedPreferences("family_control_settings", MODE_PRIVATE);
+        numberFormat = NumberFormat.getIntegerInstance(Locale.getDefault());
         render();
     }
 
@@ -43,6 +47,7 @@ public class MainActivity extends Activity {
 
     private void render() {
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(22), dp(28), dp(22), dp(24));
@@ -104,7 +109,7 @@ public class MainActivity extends Activity {
         info.addView(text("Privacy", 18, true));
         info.addView(text("This initial build does not access camera, gallery, location, SMS, call history, or payment apps.", 14, false));
 
-        TextView footer = text("FamGuard · Version 0.1.1 · Local settings only", 12, false);
+        TextView footer = text("FamGuard · Version 0.1.2 · Local settings only", 12, false);
         footer.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -116,7 +121,6 @@ public class MainActivity extends Activity {
 
     private void updateSummary() {
         int limit = prefs.getInt("monthly_limit", 3000);
-        NumberFormat format = NumberFormat.getIntegerInstance(Locale.getDefault());
-        budgetSummary.setText("Saved limit: ₹" + format.format(limit) + " / month");
+        budgetSummary.setText("Saved limit: ₹" + numberFormat.format(limit) + " / month");
     }
 }
