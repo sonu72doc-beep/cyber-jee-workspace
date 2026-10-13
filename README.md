@@ -48,7 +48,7 @@ FamGuard is currently an **installable Android prototype**, not a production-rea
 
 ### What is not live yet
 
-QR pairing is **local-only demo behavior**: scanning on one phone does not link or notify the other phone. Firebase libraries are present, but Firebase project configuration, sign-in, secure Firestore rules, and cloud synchronization are not implemented. The app does not remotely control devices or UPI apps, and it does not collect SMS, call history, camera/gallery content, or live location. Those capabilities must not be represented as active until implemented with explicit consent, appropriate Android permissions/policies, and real-device testing.
+QR pairing is **local-only demo behavior**: scanning on one phone does not link or notify the other phone. Firebase libraries are present, and a starter `firestore.rules` file has now been committed, but Firebase project configuration, app-side sign-in, cloud invitation handling, and synchronization are not implemented yet. The app does not remotely control devices or UPI apps, and it does not collect SMS, call history, camera/gallery content, or live location. Those capabilities must not be represented as active until implemented with explicit consent, appropriate Android permissions/policies, and real-device testing.
 
 Do not store UPI PINs, bank passwords, or payment credentials in FamGuard. Spending-limit features remain postponed until the final phase.
 
@@ -62,8 +62,10 @@ The Android app now includes Firebase Authentication, Cloud Firestore, and ZXing
 1. Open the [Firebase Console](https://console.firebase.google.com/) and create a project on the no-cost Spark plan.
 2. Add an Android app with package name `com.cyberjee.familycontrol`.
 3. Download `google-services.json` and place it in `app/google-services.json` locally. Do not commit credentials or private keys.
-4. Enable an authentication method and configure restrictive Firestore security rules before storing any family data.
-5. Keep the project on Spark if you want to avoid linking a billing account. Free quotas apply; when a quota is exceeded, some services can stop until the quota resets.
+4. Enable Authentication and Cloud Firestore in the Firebase Console.
+5. Review and deploy the repository's `firestore.rules` using Firebase CLI (`firebase deploy --only firestore:rules`) from a trusted computer after installing the Firebase CLI and signing in. Do not use permissive test-mode rules.
+6. The Android app still needs the cloud pairing code and project configuration before those rules can be used; do not treat QR pairing as live until a new APK has been tested on two phones.
+7. Keep the project on Spark if you want to avoid linking a billing account. Free quotas apply; when a quota is exceeded, some services can stop until the quota resets.
 
 Official plan details: https://firebase.google.com/docs/projects/billing/firebase-pricing-plans
 
