@@ -30,9 +30,27 @@ List Python packages in `requirements.txt`. Prefer reviewed, maintained packages
 - Keep this repository private unless you intentionally decide to publish it.
 - Only test systems you own or have permission to assess.
 
-## Deployment status
+## FamGuard Android build and testing
 
-Continuous integration is configured as a starter. Production deployment is **not configured yet** because the application framework and hosting target have not been selected. Once the app and target (for example, GitHub Pages for a static site or a chosen app host) are known, add a deployment workflow with narrowly scoped credentials if needed.
+FamGuard is currently an **installable Android prototype**, not a production-ready family-control service.
+
+- Latest app version in source: **0.4.0**.
+- Every push to `main` starts a GitHub Actions APK build.
+- Open [APK build history](https://github.com/sonu72doc-beep/cyber-jee-workspace/actions/workflows/android-apk.yml), open the newest successful run, and download the `famguard-android-apk` artifact. Extract the ZIP and install the APK on an Android phone.
+- The debug APK is for testing; it is not a Play Store release or a signed production build.
+
+### What currently works
+
+- Save a profile locally on one phone.
+- Generate and scan a demo QR invitation.
+- Store up to 10 scanned demo-device records locally and clear that list with confirmation.
+- Reject QR tokens that are not UUID-formatted.
+
+### What is not live yet
+
+QR pairing is **local-only demo behavior**: scanning on one phone does not link or notify the other phone. Firebase libraries are present, but Firebase project configuration, sign-in, secure Firestore rules, and cloud synchronization are not implemented. The app does not remotely control devices or UPI apps, and it does not collect SMS, call history, camera/gallery content, or live location. Those capabilities must not be represented as active until implemented with explicit consent, appropriate Android permissions/policies, and real-device testing.
+
+Do not store UPI PINs, bank passwords, or payment credentials in FamGuard. Spending-limit features remain postponed until the final phase.
 
 
 ## FamGuard cloud pairing (free-tier setup)
